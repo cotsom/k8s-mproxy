@@ -6,8 +6,6 @@ The analyzer intercepts traffic sent to a target Kubernetes `Service` IP, logs H
 
 This project demonstrates a Kubernetes `Service.spec.externalIPs` traffic interception technique in a scenario where an attacker/operator can create only their own `Deployment` and `Service` objects.
 
-> This is an educational CTF project. Do not use this technique in environments where you do not have explicit authorization.
-
 ## Technical description
 
 When we specify an IP address in `externalIPs`, kube-proxy can add this information to `iptables` rules on Kubernetes cluster nodes. This allows to hijack the IP address of a services and pods, inside the cluster.
@@ -102,3 +100,5 @@ Now, after any traffic comes to the target nginx Service IP, it will go to our a
 This way, we can intercept traffic of any Service by hijacking its IP address. All captured traffic can be viewed in the analyzer admin interface on port `9090`.
 
 ![alt text](assets/image.png)
+
+> This project was developed for educational purposes only
