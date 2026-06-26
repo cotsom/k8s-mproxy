@@ -12,7 +12,7 @@ spec:
         app: traffic-analyzer
     spec:
       containers:
-      - image: traffic-analyzer:dev
+      - image: k8s-mproxy
         name: analyzer
         imagePullPolicy: Never
         env:
