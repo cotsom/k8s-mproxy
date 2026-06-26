@@ -1,0 +1,25 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name: target-nginx
+  labels:
+    app: target-nginx
+spec:
+  containers:
+    - name: nginx
+      image: nginx:1.27-alpine
+      ports:
+        - containerPort: 80
+          name: http
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: target-nginx
+spec:
+  selector:
+    app: target-nginx
+  ports:
+    - name: http
+      port: 80
+      targetPort: 80

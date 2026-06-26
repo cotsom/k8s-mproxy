@@ -1,0 +1,169 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: traffic-analyzer
+spec:
+  selector:
+    matchLabels:
+      app: traffic-analyzer
+  template:
+    metadata:
+      labels:
+        app: traffic-analyzer
+    spec:
+      containers:
+      - image: traffic-analyzer:dev
+        name: analyzer
+        imagePullPolicy: Never
+        env:
+          - name: UPSTREAM_ADDR
+            value: "<ip>:<port>" # target pod ip:port for redirecting traffic
+        ports:
+          - name: proxy
+            containerPort: 80
+          - name: admin
+            containerPort: 9090
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: traffic-analyzer
+spec:
+  type: ClusterIP
+  selector:
+    app: traffic-analyzer
+  ports:
+  - name: https
+    protocol: TCP
+    port: 80
+    targetPort: 8080
+  externalIPs:
+    - <target-svc-ip> # svc ip for intercept traffic
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: traffic-analyzer1
+spec:
+  type: ClusterIP
+  selector:
+    app: traffic-analyzer
+  ports:
+  - name: https
+    protocol: TCP
+    port: 80
+    targetPort: 8080
+  externalIPs:
+    - <target-svc-ip> # svc ip for intercept traffic
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: traffic-analyzer2
+spec:
+  type: ClusterIP
+  selector:
+    app: traffic-analyzer
+  ports:
+  - name: https
+    protocol: TCP
+    port: 80
+    targetPort: 8080
+  externalIPs:
+    - <target-svc-ip> # svc ip for intercept traffic
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: traffic-analyzer3
+spec:
+  type: ClusterIP
+  selector:
+    app: traffic-analyzer
+  ports:
+  - name: https
+    protocol: TCP
+    port: 80
+    targetPort: 8080
+  externalIPs:
+    - <target-svc-ip> # svc ip for intercept traffic
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: traffic-analyzer4
+spec:
+  type: ClusterIP
+  selector:
+    app: traffic-analyzer
+  ports:
+  - name: https
+    protocol: TCP
+    port: 80
+    targetPort: 8080
+  externalIPs:
+    - <target-svc-ip> # svc ip for intercept traffic
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: traffic-analyzer5
+spec:
+  type: ClusterIP
+  selector:
+    app: traffic-analyzer
+  ports:
+  - name: https
+    protocol: TCP
+    port: 80
+    targetPort: 8080
+  externalIPs:
+    - <target-svc-ip> # svc ip for intercept traffic
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: traffic-analyzer6
+spec:
+  type: ClusterIP
+  selector:
+    app: traffic-analyzer
+  ports:
+  - name: https
+    protocol: TCP
+    port: 80
+    targetPort: 8080
+  externalIPs:
+    - <target-svc-ip> # svc ip for intercept traffic
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: traffic-analyzer7
+spec:
+  type: ClusterIP
+  selector:
+    app: traffic-analyzer
+  ports:
+  - name: https
+    protocol: TCP
+    port: 80
+    targetPort: 8080
+  externalIPs:
+    - <target-svc-ip> # svc ip for intercept traffic
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: traffic-analyzer8
+spec:
+  type: ClusterIP
+  selector:
+    app: traffic-analyzer
+  ports:
+  - name: https
+    protocol: TCP
+    port: 80
+    targetPort: 8080
+  externalIPs:
+    - <target-svc-ip> # svc ip for intercept traffic

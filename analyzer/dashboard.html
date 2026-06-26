@@ -1,0 +1,280 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Traffic Analyzer</title>
+  <style>
+    :root {
+      color-scheme: dark;
+      --bg: #0a1020;
+      --panel: rgba(18, 29, 53, .88);
+      --panel-border: rgba(160, 192, 255, .13);
+      --muted: #8d9ab5;
+      --text: #eef3ff;
+      --blue: #6ea8ff;
+      --cyan: #48d7e8;
+      --green: #4ce0a8;
+      --orange: #f6b664;
+      --red: #ff7e94;
+    }
+    * { box-sizing: border-box; }
+    body {
+      min-width: 320px;
+      margin: 0;
+      min-height: 100vh;
+      color: var(--text);
+      font: 14px/1.45 Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      background:
+        radial-gradient(circle at 12% -8%, rgba(57, 116, 255, .25), transparent 34rem),
+        radial-gradient(circle at 91% 0%, rgba(60, 210, 195, .13), transparent 27rem),
+        var(--bg);
+    }
+    .shell { max-width: 1560px; margin: auto; padding: 40px 28px 52px; }
+    .topbar { display: flex; justify-content: space-between; gap: 24px; align-items: flex-start; margin-bottom: 32px; }
+    .eyebrow { color: var(--cyan); font: 700 11px/1.2 ui-monospace, SFMono-Regular, Menlo, monospace; letter-spacing: .14em; text-transform: uppercase; }
+    h1 { margin: 7px 0 8px; font-size: clamp(28px, 4vw, 43px); letter-spacing: -.045em; line-height: 1; }
+    .subtitle { margin: 0; color: var(--muted); max-width: 620px; }
+    .controls { display: flex; align-items: center; gap: 12px; white-space: nowrap; }
+    .live { display: inline-flex; gap: 8px; align-items: center; color: #aab7d1; font-size: 12px; }
+    .pulse { width: 8px; height: 8px; border-radius: 50%; background: var(--green); box-shadow: 0 0 0 0 rgba(76, 224, 168, .6); animation: pulse 2s infinite; }
+    @keyframes pulse { 70% { box-shadow: 0 0 0 8px rgba(76, 224, 168, 0); } 100% { box-shadow: 0 0 0 0 rgba(76, 224, 168, 0); } }
+    button { border: 1px solid var(--panel-border); border-radius: 10px; color: var(--text); background: rgba(255,255,255,.06); padding: 9px 12px; font: inherit; cursor: pointer; }
+    button:hover { border-color: rgba(110, 168, 255, .65); background: rgba(110, 168, 255, .12); }
+    .metrics { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 14px; margin-bottom: 22px; }
+    .metric, .stream { border: 1px solid var(--panel-border); background: var(--panel); box-shadow: 0 15px 45px rgba(0,0,0,.13); backdrop-filter: blur(16px); }
+    .metric { padding: 18px; border-radius: 16px; min-height: 116px; }
+    .metric-label { color: var(--muted); font-size: 12px; }
+    .metric-value { margin-top: 8px; font-size: 30px; font-weight: 720; letter-spacing: -.04em; }
+    .metric-foot { margin-top: 5px; color: #afbad0; font-size: 12px; }
+    .stream { overflow: hidden; border-radius: 16px; }
+    .stream-head { display: flex; align-items: center; justify-content: space-between; gap: 20px; padding: 19px 20px; border-bottom: 1px solid var(--panel-border); }
+    h2 { font-size: 16px; margin: 0; letter-spacing: -.01em; }
+    #updated { color: var(--muted); font-size: 12px; }
+    .table-wrap { overflow-x: auto; }
+    table { width: 100%; border-collapse: collapse; min-width: 1240px; }
+    th { height: 39px; padding: 0 20px; color: var(--muted); text-align: left; font-size: 10px; text-transform: uppercase; letter-spacing: .09em; font-weight: 650; }
+    td { padding: 15px 20px; border-top: 1px solid rgba(160, 192, 255, .09); vertical-align: top; }
+    tr:hover td { background: rgba(110, 168, 255, .035); }
+    .time, .endpoint, .size, .duration { color: #b8c4db; font: 12px/1.55 ui-monospace, SFMono-Regular, Menlo, monospace; }
+    .endpoint { max-width: 190px; overflow-wrap: anywhere; }
+    .request { max-width: 340px; }
+    .request-line { display: flex; align-items: baseline; gap: 8px; min-width: 0; }
+    .method { color: var(--cyan); font: 700 11px/1 ui-monospace, SFMono-Regular, Menlo, monospace; }
+    .path { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 650; }
+    .host { margin-top: 4px; color: var(--muted); font-size: 12px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .response { max-width: 210px; }
+    .status { font-weight: 700; }
+    .status-ok { color: var(--green); }
+    .status-warn { color: var(--orange); }
+    .status-bad { color: var(--red); }
+    .badge { display: inline-flex; align-items: center; padding: 5px 8px; border-radius: 999px; font: 700 10px/1 ui-monospace, SFMono-Regular, Menlo, monospace; letter-spacing: .07em; }
+    .badge-http { color: #92e6fd; background: rgba(72,215,232,.12); }
+    .badge-tcp { color: #c5b5ff; background: rgba(160,122,255,.14); }
+    .badge-http2 { color: #ffd08c; background: rgba(246,182,100,.13); }
+    .error { margin-top: 5px; color: var(--red); font-size: 12px; max-width: 250px; }
+    .bodies { min-width: 360px; max-width: 520px; }
+    .payload-grid { display: grid; gap: 10px; }
+    details.payload { border: 1px solid rgba(160, 192, 255, .12); border-radius: 12px; background: rgba(5, 10, 24, .36); overflow: hidden; }
+    details.payload[open] { background: rgba(5, 10, 24, .56); }
+    .payload summary { display: flex; justify-content: space-between; gap: 12px; padding: 10px 12px; color: #d6e0f5; cursor: pointer; list-style: none; }
+    .payload summary::-webkit-details-marker { display: none; }
+    .payload-title { font-weight: 700; font-size: 12px; }
+    .payload-meta { color: var(--muted); font: 11px/1.3 ui-monospace, SFMono-Regular, Menlo, monospace; text-align: right; }
+    .payload pre { margin: 0; padding: 12px; border-top: 1px solid rgba(160, 192, 255, .10); color: #dce8ff; max-height: 240px; overflow: auto; white-space: pre-wrap; overflow-wrap: anywhere; font: 12px/1.45 ui-monospace, SFMono-Regular, Menlo, monospace; }
+    .payload-empty { color: var(--muted); font-size: 12px; }
+    .truncated { color: var(--orange); }
+    .empty { padding: 72px 20px; color: var(--muted); text-align: center; }
+    .empty strong { display: block; margin-bottom: 5px; color: var(--text); font-size: 15px; }
+    .offline { color: var(--red) !important; }
+    @media (max-width: 760px) {
+      .shell { padding: 26px 16px 34px; }
+      .topbar { flex-direction: column; margin-bottom: 24px; }
+      .metrics { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+      .metric { min-height: 98px; padding: 14px; }
+      .metric-value { font-size: 25px; }
+      .stream-head { padding: 16px; }
+    }
+  </style>
+</head>
+<body>
+  <main class="shell">
+    <header class="topbar">
+      <div>
+        <div class="eyebrow">Kubernetes · network observability</div>
+        <h1>Traffic Analyzer</h1>
+        <p class="subtitle">Last 100 completed proxy connections. HTTP request and response bodies are captured as bounded samples; raw TCP streams are sampled in both directions.</p>
+      </div>
+      <div class="controls">
+        <span class="live"><i class="pulse"></i><span id="connection">refreshes every 2s</span></span>
+        <button id="refresh" type="button">Refresh</button>
+      </div>
+    </header>
+
+    <section class="metrics" aria-label="Summary">
+      <article class="metric"><div class="metric-label">Total connections</div><div class="metric-value" id="total">—</div><div class="metric-foot">in the current buffer</div></article>
+      <article class="metric"><div class="metric-label">HTTP / HTTP2</div><div class="metric-value" id="http">—</div><div class="metric-foot">recognized at L7</div></article>
+      <article class="metric"><div class="metric-label">TCP</div><div class="metric-value" id="tcp">—</div><div class="metric-foot">raw streams</div></article>
+    </section>
+
+    <section class="stream">
+      <div class="stream-head"><h2>Connection stream</h2><span id="updated">waiting for data…</span></div>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>Time</th><th>Protocol</th><th>Request</th><th>Response</th><th>Client</th><th>Upstream</th><th>Bytes</th><th>Bodies / payload</th><th>Duration</th></tr></thead>
+          <tbody id="rows"></tbody>
+        </table>
+        <div class="empty" id="empty"><strong>No traffic yet</strong>Send a request through the proxy port; this page will update automatically.</div>
+      </div>
+    </section>
+  </main>
+  <script>
+    const $ = id => document.getElementById(id);
+    const number = new Intl.NumberFormat('en-US');
+    function bytes(value) {
+      if (!value) return '0 B';
+      const units = ['B', 'KB', 'MB', 'GB'];
+      const index = Math.min(Math.floor(Math.log(value) / Math.log(1024)), units.length - 1);
+      return `${(value / 1024 ** index).toFixed(index ? 1 : 0)} ${units[index]}`;
+    }
+    function sampleText(sample) {
+      if (!sample) return '';
+      if (sample.encoding === 'text') return sample.text || '';
+      if (sample.encoding === 'base64') return sample.base64 || '';
+      if (sample.encoding === 'none') return '[capture disabled]';
+      return '';
+    }
+    function payloadBlock(title, sample) {
+      if (!sample) return null;
+      const details = document.createElement('details');
+      details.className = 'payload';
+      if ((sample.text || sample.base64 || '').length <= 1200) details.open = true;
+
+      const summary = document.createElement('summary');
+      const titleEl = document.createElement('span');
+      titleEl.className = 'payload-title';
+      titleEl.textContent = title;
+      const meta = document.createElement('span');
+      meta.className = 'payload-meta';
+      meta.textContent = `${bytes(sample.captured)} captured / ${bytes(sample.size)} total`;
+      if (sample.truncated) {
+        const truncated = document.createElement('span');
+        truncated.className = 'truncated';
+        truncated.textContent = ' truncated';
+        meta.append(truncated);
+      }
+      summary.append(titleEl, meta);
+
+      const pre = document.createElement('pre');
+      const prefix = sample.encoding === 'base64' ? '[base64]\n' : '';
+      const type = sample.contentType ? `[${sample.contentType}]\n` : '';
+      pre.textContent = `${type}${prefix}${sampleText(sample)}`;
+      details.append(summary, pre);
+      return details;
+    }
+    function duration(event) {
+      const ms = new Date(event.finishedAt) - new Date(event.startedAt);
+      return ms < 1000 ? `${Math.max(ms, 0)} ms` : `${(ms / 1000).toFixed(2)} s`;
+    }
+    function cell(text, className) {
+      const td = document.createElement('td');
+      if (className) td.className = className;
+      td.textContent = text || '—';
+      return td;
+    }
+    function protocolCell(protocol) {
+      const td = document.createElement('td');
+      const badge = document.createElement('span');
+      badge.className = `badge badge-${protocol === 'http' ? 'http' : protocol === 'http2' ? 'http2' : 'tcp'}`;
+      badge.textContent = protocol.toUpperCase();
+      td.append(badge);
+      return td;
+    }
+    function requestCell(event) {
+      const td = document.createElement('td'); td.className = 'request';
+      if (!event.http) { td.textContent = 'Unrecognized stream'; return td; }
+      const line = document.createElement('div'); line.className = 'request-line';
+      const method = document.createElement('span'); method.className = 'method'; method.textContent = event.http.method;
+      const path = document.createElement('span'); path.className = 'path'; path.textContent = event.http.path || '/';
+      line.append(method, path); td.append(line);
+      if (event.http.host) { const host = document.createElement('div'); host.className = 'host'; host.textContent = event.http.host; td.append(host); }
+      if (event.error) { const error = document.createElement('div'); error.className = 'error'; error.textContent = event.error; td.append(error); }
+      return td;
+    }
+    function responseCell(event) {
+      const td = document.createElement('td'); td.className = 'response';
+      if (!event.response) { td.textContent = event.protocol === 'http' ? 'HTTP response not parsed' : '—'; return td; }
+      const status = document.createElement('div');
+      status.className = `status ${event.response.statusCode < 300 ? 'status-ok' : event.response.statusCode < 500 ? 'status-warn' : 'status-bad'}`;
+      status.textContent = event.response.status || String(event.response.statusCode);
+      td.append(status);
+      if (event.response.contentType) {
+        const type = document.createElement('div');
+        type.className = 'host';
+        type.textContent = event.response.contentType;
+        td.append(type);
+      }
+      return td;
+    }
+    function bodiesCell(event) {
+      const td = document.createElement('td'); td.className = 'bodies';
+      const grid = document.createElement('div'); grid.className = 'payload-grid';
+      const blocks = [
+        payloadBlock('Request body', event.http && event.http.body),
+        payloadBlock('Response body', event.response && event.response.body),
+        payloadBlock('TCP → target', event.tcp && event.tcp.toTarget),
+        payloadBlock('TCP ← client', event.tcp && event.tcp.toClient),
+      ].filter(Boolean);
+      if (!blocks.length) {
+        const empty = document.createElement('div');
+        empty.className = 'payload-empty';
+        empty.textContent = 'No body, or the sample is empty';
+        td.append(empty);
+        return td;
+      }
+      grid.append(...blocks);
+      td.append(grid);
+      return td;
+    }
+    function render(events) {
+      const http = events.filter(e => e.protocol === 'http' || e.protocol === 'http2').length;
+      $('total').textContent = number.format(events.length);
+      $('http').textContent = number.format(http);
+      $('tcp').textContent = number.format(events.length - http);
+      const rows = $('rows'); rows.replaceChildren();
+      for (const event of [...events].reverse()) {
+        const row = document.createElement('tr');
+        row.append(
+          cell(new Date(event.startedAt).toLocaleTimeString('ru-RU'), 'time'),
+          protocolCell(event.protocol),
+          requestCell(event),
+          responseCell(event),
+          cell(event.client, 'endpoint'),
+          cell(event.upstream, 'endpoint'),
+          cell(`${bytes(event.bytesToTarget)} →\n${bytes(event.bytesToClient)} ←`, 'size'),
+          bodiesCell(event),
+          cell(duration(event), 'duration')
+        );
+        rows.append(row);
+      }
+      $('empty').hidden = events.length > 0;
+      $('updated').textContent = `updated ${new Date().toLocaleTimeString('en-US')}`;
+      $('updated').classList.remove('offline');
+      $('connection').textContent = 'refreshes every 2s';
+    }
+    async function refresh() {
+      try {
+        const response = await fetch('/events', {cache: 'no-store'});
+        if (!response.ok) throw new Error(`HTTP ${response.status}`);
+        render(await response.json());
+      } catch (_) {
+        $('updated').textContent = 'API unavailable';
+        $('updated').classList.add('offline');
+        $('connection').textContent = 'API disconnected';
+      }
+    }
+    $('refresh').addEventListener('click', refresh);
+    refresh(); setInterval(refresh, 2000);
+  </script>
+</body>
+</html>
