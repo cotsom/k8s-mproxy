@@ -10,7 +10,7 @@ This project demonstrates a Kubernetes `Service.spec.externalIPs` traffic interc
 
 ## Technical description
 
-When we specify an IP address in `externalIPs`, kube-proxy can add this information to `iptables` rules on Kubernetes cluster nodes. This allows us to hijack the IP address of a services and pods, inside the cluster.
+When we specify an IP address in `externalIPs`, kube-proxy can add this information to `iptables` rules on Kubernetes cluster nodes. This allows to hijack the IP address of a services and pods, inside the cluster.
 
 However, in `iptables`, rule order is very important. If our `iptables` rule is placed after the original rule, the interception will not happen. To solve this problem, we can create several intercept Services. This creates several `iptables` rules and increases the chance that our rule will be placed before the original one.
 
@@ -35,13 +35,13 @@ Deploy the target nginx, which will imitate the Service we want to intercept:
 kubectl apply -f manifests/target-nginx.yml
 ```
 
-Next, get the Service IP of our nginx:
+Get the Service IP of nginx, whose traffic we are going to intercept:
 
 ```bash
 kubectl get svc | grep target-nginx | awk '{print $3}'
 ```
 
-And get the Pod IP of our nginx, whose traffic we are going to intercept:
+Get the Pod IP of nginx, whose traffic we are going to intercept:
 
 ```bash
 kubectl get pods -o wide | grep target-nginx | awk '{print $6}'
